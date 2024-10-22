@@ -9,9 +9,10 @@ import sys
 
 import pygame as pg
 from .. import prepare, state_machine, menu_helpers, tools
+from ..controls import ControlManager
 
 FONT = pg.font.Font(prepare.FONTS["Fixedsys500c"], 60)
-OPTIONS = ["STORY MODE", "ARCADE MODE", "SETTINGS", "EXIT"]
+OPTIONS = ["STORY MODE", "GAME", "SETTINGS", "EXIT"]
 HIGHLIGHT_COLOR = (108, 148, 136)
 
 # Placement and spacing constants.
@@ -27,7 +28,7 @@ class MainMenu(state_machine._State):
         self.index = 0
         self.next = None
         self.options = self.make_options(FONT, OPTIONS, OPT_SPACER)
-
+        self.control_manager = ControlManager()
         self.title_image = TitleImage()
 
     def make_options(self, font, options, spacer):
@@ -47,18 +48,18 @@ class MainMenu(state_machine._State):
 
     def startup(self, now, persistant):
         state_machine._State.startup(self, now, persistant)
+        self.index = 0  # Reset the menu index to the first option
+        self.done = False  # Ensure 'done' is reset
+        self.next = None
 
     def cleanup(self):
         """Reset State.done to False."""
+
+        self.next = None
         self.done = False
         return self.persist
 
     def update(self, keys, now):
-        # Menu state
-        if keys[pg.K_RETURN]:
-            self.done = True
-            self.next = OPTIONS[self.index]
-
         # Title image
         self.title_image.update(now)
 
@@ -67,7 +68,7 @@ class MainMenu(state_machine._State):
         surface.fill(prepare.BACKGROUND_COLOR)
 
         # Draw the title image
-        surface.blit(self.title_image.image, self.title_image.rect)
+        #surface.blit(self.title_image.image, self.title_image.rect)
 
         for i, (msg, rect) in enumerate(self.options):
             if i == self.index:
@@ -75,14 +76,17 @@ class MainMenu(state_machine._State):
             surface.blit(msg, rect)
 
     def get_event(self, event):
-        """Handle key events for menu navigation."""
-        if event.type == pg.KEYDOWN:
-            if event.key == pg.K_DOWN:
-                self.index = (self.index + 1) % len(OPTIONS)
-            elif event.key == pg.K_UP:
-                self.index = (self.index - 1) % len(OPTIONS)
-            elif event.key == pg.K_RETURN:
-                self.pressed_enter()
+        """Handle key events using ControlManager."""
+        if event.type == pg.KEYDOWN or event.type == pg.KEYUP:
+            action = self.control_manager.handle_key_event(event)  # Get the action based on the key event
+
+            if event.type == pg.KEYDOWN:
+                if action == "move_down":
+                    self.index = (self.index + 1) % len(OPTIONS)
+                elif action == "move_up":
+                    self.index = (self.index - 1) % len(OPTIONS)
+                elif action == "punch_left" or action == "punch_right":
+                    self.pressed_enter()
 
     def pressed_enter(self):
         """Set the next state based on the selected option."""

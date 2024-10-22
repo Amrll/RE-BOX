@@ -43,6 +43,7 @@ class StateMachine(object):
         When a State changes to done necessary startup and cleanup functions
         are called and the current State is changed.
         """
+
         previous, self.state_name = self.state_name, self.state.next
         persist = self.state.cleanup()
         self.state = self.state_dict[self.state_name]

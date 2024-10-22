@@ -5,7 +5,7 @@ tools.Control and adds the game states to its state_machine dictionary.
 
 import pygame as pg
 from . import prepare, tools
-from .states import splash, title, game, select
+from .states import splash, title, game, select, game_over, victory, loading
 
 
 def main():
@@ -17,7 +17,10 @@ def main():
         "SPLASH": splash.Splash(),
         "TITLE": title.Title(),
         "SELECT": select.MainMenu(),
-        # "GAME": game.Game(),
+        "GAME": game.Game(),
+        "GAME_OVER": game_over.GameOver(),
+        "VICTORY": victory.Victory(),
+        "LOADING": loading.LoadingScreen(),
     }
 
     # Set up the states in the state machine and start with "SPLASH"

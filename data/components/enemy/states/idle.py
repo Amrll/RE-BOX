@@ -1,4 +1,7 @@
 class Idle:
     def update(self, enemy):
-        # Update logic for patrolling state
         pass
+
+    def check_player_hit(self, player_pos):
+        """No damage dealt in the idle state."""
+        return 0

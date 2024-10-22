@@ -74,34 +74,35 @@ class Control:
             self.draw(lag / TIME_PER_UPDATE)
 
 
-class Timer(object):
-    """
-    A very simple timer for events that are not directly tied to animation.
-    """
+class Timer:
+    def __init__(self, interval, start_on_init=False):
+        self.interval = interval  # Time duration in milliseconds
+        self.start_time = None    # Tracks when the timer starts
+        self.running = False      # Tracks if the timer is running
+        if start_on_init:
+            self.start(pg.time.get_ticks())
 
-    def __init__(self, delay, ticks=-1):
-        """
-        The delay is given in milliseconds; ticks is the number of ticks the
-        timer will make before flipping self.done to True.  Pass a value
-        of -1 to bypass this.
-        """
-        self.delay = delay
-        self.ticks = ticks
-        self.tick_count = 0
-        self.timer = None
-        self.done = False
+    def start(self, now=None):
+        """Start the timer."""
+        if now is None:
+            now = pg.time.get_ticks()
+        self.start_time = now
+        self.running = True
 
-    def check_tick(self, now):
-        """Returns true if a tick worth of time has passed."""
-        if not self.timer:
-            self.timer = now
+    def check_tick(self, now=None):
+        """Check if the timer has finished."""
+        if now is None:
+            now = pg.time.get_ticks()
+        if self.running and (now - self.start_time >= self.interval):
+            self.running = False  # Timer stops after interval
             return True
-        elif not self.done and now - self.timer > self.delay:
-            self.tick_count += 1
-            self.timer = now
-            if self.ticks != -1 and self.tick_count >= self.ticks:
-                self.done = True
-            return True
+        return False
+
+    def stop(self):
+        """Manually stop the timer."""
+        self.running = False
+        self.start_time = None
+
 
 
 class _BaseSprite(pg.sprite.Sprite):

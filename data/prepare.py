@@ -11,6 +11,7 @@ from . import tools
 pg.init()
 
 SCREEN_SIZE = (1920, 1080)
+SCREEN = pg.display.set_mode(SCREEN_SIZE)
 ORIGINAL_CAPTION = "ReBox"
 COLOR_KEY = (255, 0, 255)
 BACKGROUND_COLOR = (30, 40, 50)
@@ -21,9 +22,6 @@ BIG_FONT = pg.font.Font(_FONT_PATH, 100)
 # Initialize the display with the screen size
 pg.display.set_mode(SCREEN_SIZE)
 pg.display.set_caption(ORIGINAL_CAPTION)
-
-# General constants
-PLAYER_HEALTH = 3
 
 DIRECTIONS = ["left", "middle", "right"]
 
