@@ -145,22 +145,28 @@ class _BaseSprite(pg.sprite.Sprite):
 # Resource loading functions.
 def load_all_gfx(directory, colorkey=(255, 0, 255), accept=(".png", ".jpg", ".bmp")):
     """
-    Load all graphics with extensions in the accept argument.  If alpha
-    transparency is found in the image the image will be converted using
-    convert_alpha().  If no alpha transparency is detected image will be
-    converted using convert() and colorkey will be set to colorkey.
+    Load all graphics from a directory and its subdirectories.
+    Handles nested directories, returning a nested dictionary structure.
+    If alpha transparency is found in the image, it is converted using
+    convert_alpha(). Otherwise, colorkey is applied.
     """
     graphics = {}
-    for pic in os.listdir(directory):
-        name, ext = os.path.splitext(pic)
-        if ext.lower() in accept:
-            img = pg.image.load(os.path.join(directory, pic))
-            if img.get_alpha():
-                img = img.convert_alpha()
-            else:
-                img = img.convert()
-                img.set_colorkey(colorkey)
-            graphics[name] = img
+    for item in os.listdir(directory):
+        full_path = os.path.join(directory, item)
+        if os.path.isdir(full_path):
+            # Recursively load graphics from subdirectories
+            graphics[item] = load_all_gfx(full_path, colorkey, accept)
+        else:
+            # Process individual image files
+            name, ext = os.path.splitext(item)
+            if ext.lower() in accept:
+                img = pg.image.load(full_path)
+                if img.get_alpha():
+                    img = img.convert_alpha()
+                else:
+                    img = img.convert()
+                    img.set_colorkey(colorkey)
+                graphics[name] = img
     return graphics
 
 

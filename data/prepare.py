@@ -34,6 +34,8 @@ FONTS = tools.load_all_fonts(os.path.join("assets", "fonts"))
 MUSIC = tools.load_all_music(os.path.join("assets", "music"))
 SFX = tools.load_all_sfx(os.path.join("assets", "sound"))
 
+ICON_PATH = os.path.join("assets", "graphics", "misc", "icon.png")
+ICON_IMAGE = pg.image.load(ICON_PATH)
 
 def graphics_from_directories(directories):
     """

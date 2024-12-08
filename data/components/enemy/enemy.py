@@ -5,6 +5,8 @@ from .states.attack_middle import AttackMiddle
 from .states.attack_right import AttackRight
 from .states.take_damage import TakeDamage
 from .states.warning import WarningAttack
+from .states.block import Block
+from ...animation_manager import AnimationManager
 
 STATE_COLORS = {
     'Idle': (0, 255, 0),          # Green for Idle state
@@ -29,6 +31,11 @@ class Enemy(pg.sprite.Sprite):
         self.player_last_attacked_time = pg.time.get_ticks()
         self.is_taking_damage = False
         self.damage = 0
+
+        self.warning_duration = 1500
+
+        self.animation_manager = AnimationManager()
+
 
     def update(self):
         """Update the enemy state machine."""
@@ -77,7 +84,19 @@ class Enemy(pg.sprite.Sprite):
         self.state_machine.change_state(TakeDamage(damage))
 
     def draw(self, surface):
-        """Draw the enemy with color based on current state."""
-        current_state_name = self.state_machine.state.__class__.__name__
-        color = STATE_COLORS.get(current_state_name, (255, 255, 255))  # Default to white
-        pg.draw.rect(surface, color, self.rect)
+        # Use self.enemy_name to select different animations based on the enemy's name
+        if isinstance(self.state_machine.state, AttackLeft):
+            self.animation_manager.play_animation(f"{self.enemy_name}_attack", surface, (self.rect.x, self.rect.y))
+        elif isinstance(self.state_machine.state, AttackMiddle):
+            self.animation_manager.play_animation(f"{self.enemy_name}_attack", surface, (self.rect.x, self.rect.y))
+        elif isinstance(self.state_machine.state, AttackRight):
+            self.animation_manager.play_animation(f"{self.enemy_name}_attack", surface, (self.rect.x, self.rect.y))
+        elif isinstance(self.state_machine.state, TakeDamage):
+            self.animation_manager.play_animation(f"{self.enemy_name}_hurt", surface, (self.rect.x, self.rect.y))
+        elif isinstance(self.state_machine.state, Block):
+            self.animation_manager.play_animation(f"{self.enemy_name}_block", surface, (self.rect.x, self.rect.y))
+        elif isinstance(self.state_machine.state, WarningAttack):
+            self.animation_manager.play_animation(f"{self.enemy_name}_warning", surface, (self.rect.x, self.rect.y))
+        else:
+            self.animation_manager.play_animation(f"{self.enemy_name}_idle", surface, (self.rect.x, self.rect.y))
+

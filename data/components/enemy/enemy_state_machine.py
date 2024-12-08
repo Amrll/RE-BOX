@@ -43,7 +43,7 @@ class EnemyStateMachine:
         """Randomly start an attack in one of three positions."""
         attack_position = random.choice([0, 1, 2])  # Choose a random attack position
 
-        self.change_state(WarningAttack(attack_position))
+        self.change_state(WarningAttack(attack_position, duration=self.enemy.warning_duration))
 
         self.last_attack_time = now  # Record the time of the attack
 

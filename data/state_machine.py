@@ -22,6 +22,7 @@ class StateMachine(object):
         self.state_dict = state_dict
         self.state_name = start_state
         self.state = self.state_dict[self.state_name]
+        self.state.persist = {}
 
     def update(self, keys, now):
         """
@@ -46,8 +47,11 @@ class StateMachine(object):
 
         previous, self.state_name = self.state_name, self.state.next
         persist = self.state.cleanup()
+        print(f"Persist data before state transition: {persist}")
         self.state = self.state_dict[self.state_name]
-        self.state.startup(self.now, persist)
+        self.state.persist = persist if persist else {}
+
+        self.state.startup(self.now, self.state.persist)
         self.state.previous = previous
 
     def get_event(self, event):

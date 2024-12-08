@@ -2,7 +2,7 @@ import pygame as pg
 
 
 class WarningAttack:
-    def __init__(self, attack_position, duration=1500):
+    def __init__(self, attack_position, duration):
         self.attack_position = attack_position  # The attack position (left, middle, or right)
         self.duration = duration  # Duration of the warning phase (1 second)
         self.start_time = pg.time.get_ticks()

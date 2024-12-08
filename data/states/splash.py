@@ -44,10 +44,9 @@ class Splash(state_machine._State):
             # Only update current_gesture if enough time has passed since the last update
             if detected_gesture:
                 current_time = time.time()
-                if self.last_gesture_time is None or current_time - self.last_gesture_time >= self.gesture_debounce_time:
-                    with self.gesture_lock:
-                        self.current_gesture = detected_gesture
-                        self.last_gesture_time = current_time
+                with self.gesture_lock:
+                    self.current_gesture = detected_gesture
+                    self.last_gesture_time = current_time
 
     def update(self, keys, now):
         """Update the loading screen state."""

@@ -12,6 +12,7 @@ from ..components.countdown import Countdown
 class Game(state_machine._State):
     def __init__(self):
         super(Game, self).__init__()
+        self.enemy = Enemy()
         self.animation_manager = AnimationManager()
         self.control_manager = ControlManager()
         self.ground = None
@@ -20,7 +21,6 @@ class Game(state_machine._State):
         self.done = False
 
         self.player = Player(prepare.SCREEN)
-        self.enemy = Enemy()
 
         self.countdown = Countdown(duration=4000)  # Initialize Countdown
 
@@ -34,7 +34,7 @@ class Game(state_machine._State):
         self.player.reset()  # Reset player to initial state
         self.enemy.reset()
         self.done = False
-        self.countdown.start()  # Start countdown when resetting game state
+        self.countdown.start()
 
     def startup(self, now, persistent):
         """Set up the game when it starts or restarts."""
@@ -43,6 +43,15 @@ class Game(state_machine._State):
         self.reset_game_state()
         self.setup_arena()
         self.setup_hud()
+
+        selected_enemy = self.persist.get("selected_enemy", {"name": "Default", "health": 10, "warning_duration": 1500})
+
+        # Set the properties of the enemy using the selected values
+        self.enemy.enemy_name = selected_enemy["name"]
+        self.enemy.initial_health = selected_enemy["health"]
+        self.enemy.health = selected_enemy["health"]
+        self.enemy.warning_duration = selected_enemy["warning_duration"]
+
 
     def setup_arena(self):
         """Set up the background arena."""

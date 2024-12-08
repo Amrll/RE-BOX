@@ -22,7 +22,7 @@ class AttackRight:
 
     def check_player_hit(self, player_pos):
         """Check if the player is in the attack zone (left position)."""
-        if player_pos == 1:
+        if player_pos == 2:
             return self.damage
         return 0
 

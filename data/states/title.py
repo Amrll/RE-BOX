@@ -18,7 +18,6 @@ class Title(state_machine._State):
 
     def __init__(self):
         super().__init__()
-        self.hand_detected = False  # Store detection result
         self.detecting = True  # Control detection thread
         self.gesture_lock = threading.Lock()
         self.detection_thread = threading.Thread(target=self.run_hand_detection, daemon=True)
@@ -201,6 +200,7 @@ class TradeMark(pg.sprite.Sprite):
         self.image = self.raw_image
         center = (prepare.SCREEN_RECT.centerx, 900)
         self.rect = self.image.get_rect(center=center)
+
 
 def render_font(font, size, msg, color=(255, 255, 255)):
     """
