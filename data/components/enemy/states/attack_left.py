@@ -6,7 +6,7 @@ class AttackLeft:
         """Initialize the attack with a start time and duration."""
         self.start_time = start_time
         self.duration = duration
-        self.damage = 1  # Damage dealt by this attack
+        self.damage = 1
 
     def update(self, enemy):
         """Handle the attack logic and transition back to Idle after the attack."""
@@ -22,9 +22,9 @@ class AttackLeft:
 
     def check_player_hit(self, player_pos):
         """Check if the player is in the attack zone (left position)."""
-        if player_pos == 0:  # Player in left position
-            return self.damage  # Deal damage if the player is in the left position
-        return 0  # No damage otherwise
+        if player_pos == 0:
+            return self.damage
+        return 0
 
     def handle_hit(self, enemy):
         """Handle player hit, immediately switch to Idle state."""

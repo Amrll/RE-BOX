@@ -116,9 +116,6 @@ class Game(state_machine._State):
                 if attack_position not in (0, 1, 2):
                     return  # Ignore invalid positions
 
-                # Reverse attack_position to fix left-right reversal
-                attack_position = 2 - attack_position
-
                 # Define column dimensions
                 screen_width, screen_height = surface.get_size()
                 column_width = screen_width / 3  # Use floating-point division for precision
