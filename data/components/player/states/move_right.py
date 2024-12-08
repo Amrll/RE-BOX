@@ -7,7 +7,7 @@ class MoveRight:
 
     def update(self, player):
         """Move player to the right if possible."""
-        if player.player_pos < 2:
-            player.player_pos += 1
+        if player.player_pos != 2:
+            player.player_pos = 2
             player.rect.x = player.player_positions[player.player_pos]
-        player.state_machine.change_state(Idle())  # After moving, switch to Idle state
+        player.state_machine.change_state(Idle())

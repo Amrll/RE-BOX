@@ -24,6 +24,11 @@ class Game(state_machine._State):
 
         self.countdown = Countdown(duration=4000)  # Initialize Countdown
 
+        # Variables for blinking effect
+        self.warning_visible = True
+        self.warning_blink_timer = 0  # Timer for blinking
+        self.warning_blink_interval = 200
+
     def reset_game_state(self):
         """Reset game state variables when restarting."""
         self.player.reset()  # Reset player to initial state
@@ -47,12 +52,6 @@ class Game(state_machine._State):
     def setup_hud(self):
         """Initialize the HUD for displaying health bars and info."""
         self.hud = pg.font.Font(None, 36)
-    def get_event(self, event):
-        """Handle player input for moving and attacking."""
-        if not self.countdown.active:  # Don't accept inputs during countdown
-            if event.type == pg.KEYDOWN or event.type == pg.KEYUP:
-                action = self.control_manager.handle_key_event(event)
-                self.player.handle_input(action, event.type == pg.KEYDOWN)
 
     def update(self, keys, now):
         """Update game state including player and enemy logic."""
@@ -94,9 +93,45 @@ class Game(state_machine._State):
         draw_enemy_health(surface, self.enemy, self.hud, prepare.SCREEN_RECT)
         draw_player_health(surface, self.player.health, self.animation_manager)
 
+        # Draw warning overlay for attack column if active
+        self.draw_warning(surface)
+
         # Draw countdown overlay if active
         if self.countdown.active:
             self.countdown.draw(surface)
+
+    def draw_warning(self, surface):
+        """Draw the warning for the attack column with a blinking effect."""
+        if self.enemy.is_warning_active():
+            # Update blinking state
+            current_time = pg.time.get_ticks()
+            if current_time - self.warning_blink_timer >= self.warning_blink_interval:
+                self.warning_visible = not self.warning_visible
+                self.warning_blink_timer = current_time
+
+            if self.warning_visible:
+                attack_position = self.enemy.get_warning_position()
+
+                # Ensure valid attack_position
+                if attack_position not in (0, 1, 2):
+                    return  # Ignore invalid positions
+
+                # Reverse attack_position to fix left-right reversal
+                attack_position = 2 - attack_position
+
+                # Define column dimensions
+                screen_width, screen_height = surface.get_size()
+                column_width = screen_width / 3  # Use floating-point division for precision
+
+                # Calculate the rectangle for the warning column
+                rect_x = round(attack_position * column_width)
+                warning_rect = pg.Rect(rect_x, 0, round(column_width), screen_height)
+
+                # Draw a translucent orange overlay
+                overlay = pg.Surface(warning_rect.size)
+                overlay.set_alpha(128)  # Transparency level
+                overlay.fill((255, 165, 0))  # Orange color for the warning
+                surface.blit(overlay, warning_rect.topleft)
 
     def game_over(self):
         """Handle game over state."""

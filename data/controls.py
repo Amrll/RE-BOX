@@ -1,5 +1,7 @@
 import pygame as pg
 
+from data import hand_detection
+
 DEFAULT_CONTROLS = {
     'move_left': pg.K_a,
     'move_right': pg.K_d,
@@ -7,7 +9,7 @@ DEFAULT_CONTROLS = {
     'move_down': pg.K_s,
     'punch_left': pg.K_j,
     'punch_right': pg.K_k,
-    'select': pg.K_RETURN  # You can add a 'select' action for ENTER key
+    'select': pg.K_RETURN 
 }
 
 

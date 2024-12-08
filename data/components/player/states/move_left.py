@@ -8,7 +8,7 @@ class MoveLeft:
 
     def update(self, player):
         """Move player to the left if possible."""
-        if player.player_pos > 0:
-            player.player_pos -= 1
+        if player.player_pos != 0:
+            player.player_pos = 0
             player.rect.x = player.player_positions[player.player_pos]
         player.state_machine.change_state(Idle())  # After moving, switch to Idle state

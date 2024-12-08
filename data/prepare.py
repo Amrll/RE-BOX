@@ -4,6 +4,8 @@ Also contained are various constants used throughout the program.
 """
 
 import os
+
+import cv2
 import pygame as pg
 
 from . import tools

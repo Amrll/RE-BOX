@@ -1,6 +1,6 @@
 import pygame as pg
 from .. import prepare, state_machine
-from ..components.player.player import Player
+from ..components.player.player_template import Player
 
 LOADING_BAR_COLOR = (255, 0, 0)  # Red color for the loading bar
 LOADING_BAR_BG_COLOR = (100, 100, 100)  # Gray background for the loading bar
@@ -31,7 +31,7 @@ class LoadingScreen(state_machine._State):
         """Called when the state starts up, with optional persistent data."""
         self.persist = persistent
         self.start_time = now
-        self.next_state = self.persist.get("next_state", "MAINMENU")  # Default to MAINMENU if not provided
+        self.next_state = self.persist.get("next_state", "SELECT")  # Default to MAINMENU if not provided
         self.load_duration = self.persist.get("load_duration", 1000)  # Default load duration
 
     def cleanup(self):

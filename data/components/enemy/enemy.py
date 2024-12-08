@@ -4,6 +4,7 @@ from .states.attack_left import AttackLeft
 from .states.attack_middle import AttackMiddle
 from .states.attack_right import AttackRight
 from .states.take_damage import TakeDamage
+from .states.warning import WarningAttack
 
 STATE_COLORS = {
     'Idle': (0, 255, 0),          # Green for Idle state
@@ -27,6 +28,7 @@ class Enemy(pg.sprite.Sprite):
         self.is_blocking = False
         self.player_last_attacked_time = pg.time.get_ticks()
         self.is_taking_damage = False
+        self.damage = 0
 
     def update(self):
         """Update the enemy state machine."""
@@ -50,6 +52,16 @@ class Enemy(pg.sprite.Sprite):
                     self.state_machine.state.handle_hit(self)
                     return damage
         return 0
+
+    def is_warning_active(self):
+        """Check if the enemy is in the WarningAttack state."""
+        return isinstance(self.state_machine.state, WarningAttack)
+
+    def get_warning_position(self):
+        """Get the position of the current warning if active."""
+        if self.is_warning_active():
+            return self.state_machine.state.attack_position
+        return None
 
     def check_player_attack(self, player):
         """Check if the player is attacking and process damage if not blocking."""

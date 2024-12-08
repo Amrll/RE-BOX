@@ -1,9 +1,11 @@
 """
 State for the Title scene.
 """
+import threading
+import time
 
 import pygame as pg
-from .. import prepare, state_machine, tools
+from .. import prepare, state_machine, tools, hand_detection
 from ..controls import DEFAULT_CONTROLS
 from ..tools import Timer
 
@@ -15,7 +17,18 @@ class Title(state_machine._State):
     """This State is updated while our game shows the title screen."""
 
     def __init__(self):
+        super().__init__()
+        self.hand_detected = False  # Store detection result
+        self.detecting = True  # Control detection thread
+        self.gesture_lock = threading.Lock()
+        self.detection_thread = threading.Thread(target=self.run_hand_detection, daemon=True)
+        self.last_gesture_time = None  # Time of last detected gesture
+        self.gesture_debounce_time = 1
+        self.detection_thread.start()
+        self.current_gesture = None
+
         state_machine._State.__init__(self)
+
         self.ground = prepare.GFX["misc"]["title_screen"]
         self.elements = self.make_elements()
         self.arena_settled = False  # To know when the arena has fully dropped in
@@ -87,6 +100,22 @@ class Title(state_machine._State):
         # Update elements like blinking "Punch to start"
         self.elements.update(now)
 
+    def run_hand_detection(self):
+        while self.detecting:
+            detected_gesture = hand_detection.get_detected_gesture()
+
+            # Only update current_gesture if enough time has passed since the last update
+            if detected_gesture:
+                current_time = time.time()
+                if self.last_gesture_time is None or current_time - self.last_gesture_time >= self.gesture_debounce_time:
+                    with self.gesture_lock:
+                        self.current_gesture = detected_gesture
+                        self.last_gesture_time = current_time
+
+                        if detected_gesture in ("punch_left", "punch_right"):
+                            self.done = True
+                            self.next = "SELECT"
+
     def get_event(self, event):
         if event.type == pg.KEYDOWN:
             if event.key == DEFAULT_CONTROLS["punch_left"] or event.key == DEFAULT_CONTROLS["punch_right"]:
@@ -96,7 +125,6 @@ class Title(state_machine._State):
 
     def draw(self, surface, interpolate):
         surface.blit(self.ground, (0, 0))
-        # Then, draw other elements (title words, press any key, etc.)
         self.elements.draw(surface)
 
 

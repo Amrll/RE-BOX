@@ -10,10 +10,10 @@ from ..controls import ControlManager
 
 # Constants
 FONT = pg.font.Font(prepare.FONTS["Fixedsys500c"], 60)
-VICTORY_FONT = pg.font.Font(prepare.FONTS["Fixedsys500c"], 100)  # Larger font for "Victory" text
+VICTORY_FONT = pg.font.Font(prepare.FONTS["Fixedsys500c"], 100)
 OPTIONS = ["CONTINUE", "REPLAY", "MAIN MENU"]
 HIGHLIGHT_COLOR = (108, 148, 136)
-BACKGROUND_COLOR = (0, 0, 0)  # Black background
+BACKGROUND_COLOR = (0, 0, 0)
 OPTION_SPACER = 80
 
 class Victory(state_machine._State):
@@ -26,7 +26,7 @@ class Victory(state_machine._State):
 
     def make_victory_text(self, font):
         """Create the 'Victory' text and center it at the top of the screen."""
-        victory_msg = font.render("VICTORY", True, pg.Color("green"))  # "Victory" in green
+        victory_msg = font.render("VICTORY", True, pg.Color("green"))
         rect = victory_msg.get_rect(center=(prepare.SCREEN_RECT.width // 2, 370))  # Position near the top
         return victory_msg, rect
 

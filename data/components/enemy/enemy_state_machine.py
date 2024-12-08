@@ -5,6 +5,7 @@ from data.components.enemy.states.idle import Idle
 from data.components.enemy.states.attack_middle import AttackMiddle
 from data.components.enemy.states.attack_left import AttackLeft
 from data.components.enemy.states.attack_right import AttackRight
+from .states.warning import WarningAttack
 from data.components.enemy.states.take_damage import TakeDamage
 
 
@@ -16,7 +17,7 @@ class EnemyStateMachine:
         # Attack timers and durations
         self.last_attack_time = 0
         self.attack_time_interval = 4000  # Time interval for next attack (milliseconds)
-        self.attack_duration = 2000  # Duration of each attack (milliseconds)
+        self.attack_duration = 1000  # Duration of each attack (milliseconds)
 
     def update(self, enemy):
         """Update the enemy state and check for attack conditions."""
@@ -42,12 +43,15 @@ class EnemyStateMachine:
         """Randomly start an attack in one of three positions."""
         attack_position = random.choice([0, 1, 2])  # Choose a random attack position
 
-        # Change to the corresponding attack state
-        if attack_position == 0:
-            self.change_state(AttackLeft(now, self.attack_duration))
-        elif attack_position == 1:
-            self.change_state(AttackMiddle(now, self.attack_duration))
-        elif attack_position == 2:
-            self.change_state(AttackRight(now, self.attack_duration))
+        self.change_state(WarningAttack(attack_position))
 
         self.last_attack_time = now  # Record the time of the attack
+
+    def start_attack(self, attack_position):
+        """Start the actual attack after the warning phase."""
+        if attack_position == 0:
+            self.change_state(AttackLeft(pg.time.get_ticks(), self.attack_duration))
+        elif attack_position == 1:
+            self.change_state(AttackMiddle(pg.time.get_ticks(), self.attack_duration))
+        elif attack_position == 2:
+            self.change_state(AttackRight(pg.time.get_ticks(), self.attack_duration))

@@ -13,13 +13,12 @@ class AnimationManager:
         idle_gloves_frames = [pg.image.load(f"assets/graphics/player/gloves_1/idle_frame_{i}.png") for i in range(5)]
         self.add_animation("Idle_player", idle_gloves_frames, frame_duration=100)
 
-        idle_gloves_frames = [pg.image.load(f"assets/graphics/player/gloves_1/punch_left_frame_{i}.png") for i in range(1)]
-        self.add_animation("Attack_left_player", idle_gloves_frames, frame_duration=100)
+        punch_left_frame = [pg.image.load(f"assets/graphics/player/gloves_1/punch_left_frame_{i}.png") for i in range(1)]
+        self.add_animation("Attack_left_player", punch_left_frame, frame_duration=100)
 
         heart_frames = [pg.image.load(f"assets/graphics/misc/heart/heart_frame_{i}.png") for i in range(6)]
         self.add_animation("Heart", heart_frames, frame_duration=100)
 
-        # You can add more animations similarly here...
 
     def add_animation(self, name, frames, frame_duration):
         """Add an animation with its frames and frame duration."""

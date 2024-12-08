@@ -1,92 +1,134 @@
-"""
-For hands, fists, and punch detection.
- should be able to:
-        *detect if the player is gonna attack
-        *idk if we should also put the tracking of location of the user here.
-        *implement ni josh
-"""
-import cv2
 import mediapipe as mp
+import cv2
+from scipy.stats import linregress
+import numpy as np
 import time
+import threading
+# Initialize Mediapipe Hands
+mp_hands = mp.solutions.hands
+hands = mp_hands.Hands(static_image_mode=False, max_num_hands=2, min_detection_confidence=0.5)
 
-class HandTrackingDynamic:
-    def __init__(self, mode=False, maxHands=2, detectionCon=0.5, trackCon=0.5):
-        self.__mode__ = mode
-        self.__maxHands__ = maxHands
-        self.__detectionCon__ = detectionCon
-        self.__trackCon__ = trackCon
-        self.handsMp = mp.solutions.hands
-        self.hands = self.handsMp.Hands(max_num_hands=self.__maxHands__, min_detection_confidence=self.__detectionCon__, min_tracking_confidence=self.__trackCon__)
-        self.mpDraw = mp.solutions.drawing_utils
-        self.tipIds = [4, 8, 12, 16, 20]
+# Variables for smoothing hand positions
+left_hand_positions = [np.array([0, 0]), np.array([0, 0])]
+right_hand_positions = [np.array([0, 0]), np.array([0, 0])]
+damping_factor = 0.15
+cap = cv2.VideoCapture(0)
 
-    def findFingers(self, frame, draw=True):
-        imgRGB = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-        self.results = self.hands.process(imgRGB)
-        if self.results.multi_hand_landmarks:
-            for handLms in self.results.multi_hand_landmarks:
-                if draw:
-                    self.mpDraw.draw_landmarks(frame, handLms, self.handsMp.HAND_CONNECTIONS)
-        return frame
+# Track areas for detecting punches
+hands_area = [[], []]
 
-    def findPosition(self, frame, handNo=0, draw=True):
-        xList = []
-        yList = []
-        bbox = []
-        self.lmsList = []
-        if self.results.multi_hand_landmarks:
-            myHand = self.results.multi_hand_landmarks[handNo]
-            for id, lm in enumerate(myHand.landmark):
-                h, w, c = frame.shape
+# Cooldown tracking
+cooldown_time = 1.0  # Cooldown duration in seconds
+last_punch_time = {"left": 0, "right": 0}
+
+previous_column = {"Left": "middle", "Right": "middle"}
+
+gesture_lock = threading.Lock()
+current_gesture = None
+
+def detect_punch():
+    """
+    Detect punches based on hand movement slopes.
+    Returns 'punch_left', 'punch_right', or None.
+    """
+    global left_hand_positions, right_hand_positions, hands_area, previous_column, current_gesture
+
+    success, frame = cap.read()
+    if not success:
+        return None
+
+    # Convert frame to RGB
+    img_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+    results = hands.process(img_rgb)
+
+    h, w, _ = frame.shape
+    column_width = w // 3
+
+    if results.multi_hand_landmarks:
+        for hand_id, hand_landmarks in enumerate(results.multi_hand_landmarks):
+            x_list, y_list = [], []
+            for lm in hand_landmarks.landmark:
+                h, w, _ = frame.shape
                 cx, cy = int(lm.x * w), int(lm.y * h)
-                xList.append(cx)
-                yList.append(cy)
-                self.lmsList.append([id, cx, cy])
-                if draw:
-                    cv2.circle(frame, (cx, cy), 5, (255, 0, 255), cv2.FILLED)
+                x_list.append(cx)
+                y_list.append(cy)
 
-            xmin, xmax = min(xList), max(xList)
-            ymin, ymax = min(yList), max(yList)
-            bbox = xmin, ymin, xmax, ymax
-            if draw:
-                cv2.rectangle(frame, (xmin - 20, ymin - 20), (xmax + 20, ymax + 20), (0, 255, 0), 2)
+            x_min, x_max = min(x_list), max(x_list)
+            y_min, y_max = min(y_list), max(y_list)
 
-        return self.lmsList, bbox
+            top_left = np.array([x_min, y_min])
+            bottom_right = np.array([x_max, y_max])
 
-    def isFist(self):
-        """Returns True if the detected hand is making a fist."""
-        fingers = []
-        if len(self.lmsList) != 0:
-            if self.lmsList[self.tipIds[0]][1] > self.lmsList[self.tipIds[0] - 1][1]:
-                fingers.append(1)
+            handedness = results.multi_handedness[hand_id].classification[0].label
+            hand_positions = left_hand_positions if handedness == "Left" else right_hand_positions
+            hand_index = 0 if handedness == "Left" else 1
+
+            # Smooth position updates
+            current_top_left = hand_positions[0] + (top_left - hand_positions[0]) * damping_factor
+            current_bottom_right = hand_positions[1] + (bottom_right - hand_positions[1]) * damping_factor
+
+            # Update hand positions
+            hand_positions[0] = current_top_left
+            hand_positions[1] = current_bottom_right
+
+            # Calculate hand area
+            hand_width = current_bottom_right[0] - current_top_left[0]
+            hand_height = current_bottom_right[1] - current_top_left[1]
+            hands_area[hand_index].append(hand_width * hand_height)
+
+
+            # Detect column based on hand position (cx)
+            hand_center_x = int((current_top_left[0] + current_bottom_right[0]) / 2)
+            if hand_center_x < column_width:
+                current_column = "right"
+            elif hand_center_x < 2 * column_width:
+                current_column = "middle"
             else:
-                fingers.append(0)
+                current_column = "left"
 
-            for id in range(1, 5):
-                if self.lmsList[self.tipIds[id]][2] > self.lmsList[self.tipIds[id] - 2][2]:
-                    fingers.append(1)
-                else:
-                    fingers.append(0)
+            # Trigger movement if column changes
+            if current_column != previous_column[handedness]:
+                previous_column[handedness] = current_column
+                with gesture_lock:
+                    current_gesture = f"move_{current_column}"
+                    return
 
-        return fingers.count(1) == 5
+    current_time = int(time.time())
+    # Check punch movement using slope
+    if len(hands_area[0]) >= 5 and len(hands_area[1]) >= 5:
+        left_slopes = linregress(range(5), hands_area[0][-5:]).slope
+        right_slopes = linregress(range(5), hands_area[1][-5:]).slope
 
-    def isPunch(self, lastPosition, currentPosition):
-        """Detect if a punch is happening based on position change."""
-        if lastPosition is not None:
-            print('punch wow')
-            return (currentPosition[1] - lastPosition[1] > 50) and (abs(currentPosition[1] - lastPosition[1]) > 20)
-        return False
+        hands_area[0] = hands_area[0][-5:]
+        hands_area[1] = hands_area[1][-5:]
 
-    def detectGesture(self, lastPositions, frame=None):
-        """Detect specific gestures and return corresponding actions."""
-        actions = []
-        if self.results.multi_hand_landmarks:
-            for i in range(len(self.results.multi_hand_landmarks)):
-                lmsList, bbox = self.findPosition(frame, i)
-                if self.isFist():
-                    actions.append('punch_right' if bbox[0] < frame.shape[1] // 2 else 'punch_left')
-                    currentPos = (bbox[0] + bbox[2]) // 2, (bbox[1] + bbox[3]) // 2
-                    if self.isPunch(lastPositions[i], currentPos):
-                        actions.append('punch_right' if bbox[0] < frame.shape[1] // 2 else 'punch_left')
-                    lastPositions[i] = currentPos
-        return actions
+        if left_slopes > 600 and current_time - last_punch_time["left"] > cooldown_time:
+            last_punch_time["left"] = current_time
+            with gesture_lock:
+                current_gesture = "punch_right"
+                return
+
+        # Right hand punch
+        elif right_slopes > 600 and current_time - last_punch_time["right"] > cooldown_time:
+            last_punch_time["right"] = current_time
+            with gesture_lock:
+                current_gesture = "punch_left"
+                return
+
+    current_gesture = None
+
+
+def start_hand_detection():
+    while True:
+        detect_punch()
+
+
+def get_detected_gesture():
+    global current_gesture
+    with gesture_lock:
+        return current_gesture
+
+
+# Run hand detection in a separate thread
+hand_detection_thread = threading.Thread(target=start_hand_detection, daemon=True)
+hand_detection_thread.start()

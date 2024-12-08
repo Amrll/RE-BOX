@@ -5,7 +5,7 @@ from data.components.player.states.idle import Idle
 
 class TakeDamage:
     def __init__(self, damage):
-        self.duration = 3500
+        self.duration = 200
         self.start_time = pg.time.get_ticks()
         self.damage = damage
 
