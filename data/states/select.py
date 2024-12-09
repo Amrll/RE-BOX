@@ -10,7 +10,7 @@ import threading
 import time
 
 import pygame as pg
-from .. import prepare, state_machine, menu_helpers, tools, hand_detection
+from .. import prepare, state_machine, tools, hand_detection
 from ..controls import ControlManager
 
 FONT = pg.font.Font(prepare.FONTS["Fixedsys500c"], 34)
@@ -53,6 +53,8 @@ class MainMenu(state_machine._State):
         self.options = self.make_options(FONT, OPTIONS, OPT_SPACER)
         self.control_manager = ControlManager()
 
+        self.music_file = prepare.MUSIC["mainmenu"]
+
     def make_options(self, font, options, spacer):
         rendered = []
         # Calculate the total width of the options with spacing
@@ -75,9 +77,15 @@ class MainMenu(state_machine._State):
 
     def startup(self, now, persistant):
         state_machine._State.startup(self, now, persistant)
-        self.index = 1  # Reset the menu index to the first option
-        self.done = False  # Ensure 'done' is reset
+        self.index = 1
+        self.done = False
         self.next = None
+        music_playing = self.persist.get("music_playing")
+
+        if not music_playing:
+            pg.mixer.music.load(self.music_file)
+            pg.mixer.music.play(-1)  # Loop indefinitely
+            self.persist["music_playing"] = True
 
     def cleanup(self):
         """Reset State.done to False."""
@@ -164,6 +172,8 @@ class MainMenu(state_machine._State):
         """Set the next state based on the selected option."""
         selected_option = OPTIONS[self.index]
         if selected_option == "QUICK PLAY":
+            pg.mixer.music.stop()
+            self.persist["music_playing"] = False
             self.next = "ENEMYSELECT"
             self.done = True
         elif selected_option == "EXIT":

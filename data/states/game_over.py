@@ -23,6 +23,8 @@ class GameOver(state_machine._State):
         self.index = 0
         self.options = self.make_options(FONT, OPTIONS, OPTION_SPACER)
         self.game_over_text = self.make_game_over_text(GAME_OVER_FONT)
+        self.music_playing = False
+        self.music_file = prepare.MUSIC["lose"]
 
     def make_game_over_text(self, font):
         """Create the 'Game Over' text and center it at the top of the screen."""
@@ -45,6 +47,12 @@ class GameOver(state_machine._State):
     def startup(self, now, persistant):
         self.persist = persistant
         self.start_time = now
+
+        # Start background music
+        if not self.music_playing:
+            pg.mixer.music.load(self.music_file)
+            pg.mixer.music.play(0)  # Loop indefinitely
+            self.music_playing = True
 
     def cleanup(self):
         """Reset State.done to False."""
@@ -81,6 +89,7 @@ class GameOver(state_machine._State):
                 elif action == "move_up":
                     self.index = (self.index - 1) % len(OPTIONS)
                 elif action == "punch_left" or action == "punch_right":
+                    pg.mixer.music.stop()
                     self.handle_selection()
 
     def handle_selection(self):

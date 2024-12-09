@@ -36,6 +36,8 @@ class Enemy(pg.sprite.Sprite):
 
         self.animation_manager = AnimationManager()
 
+        self.current_animation = None
+
 
     def update(self):
         """Update the enemy state machine."""
@@ -84,19 +86,23 @@ class Enemy(pg.sprite.Sprite):
         self.state_machine.change_state(TakeDamage(damage))
 
     def draw(self, surface):
-        # Use self.enemy_name to select different animations based on the enemy's name
-        if isinstance(self.state_machine.state, AttackLeft):
-            self.animation_manager.play_animation(f"{self.enemy_name}_attack", surface, (self.rect.x, self.rect.y))
-        elif isinstance(self.state_machine.state, AttackMiddle):
-            self.animation_manager.play_animation(f"{self.enemy_name}_attack", surface, (self.rect.x, self.rect.y))
-        elif isinstance(self.state_machine.state, AttackRight):
-            self.animation_manager.play_animation(f"{self.enemy_name}_attack", surface, (self.rect.x, self.rect.y))
-        elif isinstance(self.state_machine.state, TakeDamage):
-            self.animation_manager.play_animation(f"{self.enemy_name}_hurt", surface, (self.rect.x, self.rect.y))
+        pass
+        x_offset = -120
+        y_offset = -150
+
+        animation_position = (self.rect.x + x_offset, self.rect.y + y_offset)
+        if isinstance(self.state_machine.state, TakeDamage):
+            self.set_animation(f"{self.enemy_name}_hurt")
         elif isinstance(self.state_machine.state, Block):
-            self.animation_manager.play_animation(f"{self.enemy_name}_block", surface, (self.rect.x, self.rect.y))
-        elif isinstance(self.state_machine.state, WarningAttack):
-            self.animation_manager.play_animation(f"{self.enemy_name}_warning", surface, (self.rect.x, self.rect.y))
+            self.set_animation(f"{self.enemy_name}_block")
         else:
-            self.animation_manager.play_animation(f"{self.enemy_name}_idle", surface, (self.rect.x, self.rect.y))
+            self.set_animation(f"{self.enemy_name}_idle")
+
+        if self.current_animation:
+            self.animation_manager.play_animation(self.current_animation, surface, animation_position)
+
+    def set_animation(self, animation_name):
+        """Set the current animation only if it's different."""
+        if self.current_animation != animation_name:
+            self.current_animation = animation_name
 

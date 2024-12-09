@@ -6,10 +6,9 @@ def draw_rounded_rect(surface, color, rect, radius):
 
 def draw_enemy_health(surface, enemy, hud, screen_rect):
     """Draw the enemy health bar with rounded corners."""
-    max_enemy_health = 10  # Maximum health for the enemy
     health_bar_width = 800
     health_bar_height = 30
-    health_ratio = enemy.health / max_enemy_health  # Use enemy's actual health
+    health_ratio = enemy.health / enemy.initial_health  # Use enemy's actual health
     current_health_bar_width = health_bar_width * health_ratio
 
     # Draw enemy health bar with rounded corners

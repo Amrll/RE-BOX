@@ -10,6 +10,7 @@ from ..controls import ControlManager
 
 # Constants
 FONT = pg.font.Font(prepare.FONTS["Fixedsys500c"], 60)
+SMALLER_FONT = pg.font.Font(prepare.FONTS["Fixedsys500c"], 30)
 VICTORY_FONT = pg.font.Font(prepare.FONTS["Fixedsys500c"], 100)
 OPTIONS = ["CONTINUE", "REPLAY", "MAIN MENU"]
 HIGHLIGHT_COLOR = (108, 148, 136)
@@ -19,16 +20,30 @@ OPTION_SPACER = 80
 class Victory(state_machine._State):
     def __init__(self):
         state_machine._State.__init__(self)
+        self.selected_enemy = None
         self.control_manager = ControlManager()
         self.index = 0
         self.options = self.make_options(FONT, OPTIONS, OPTION_SPACER)
         self.victory_text = self.make_victory_text(VICTORY_FONT)
+        self.stats_text = None
+
+        self.enemies = self.persist.get("enemies", [])
+
+        self.music_playing = False
+        self.music_file = prepare.MUSIC["victory"]
 
     def make_victory_text(self, font):
         """Create the 'Victory' text and center it at the top of the screen."""
         victory_msg = font.render("VICTORY", True, pg.Color("green"))
         rect = victory_msg.get_rect(center=(prepare.SCREEN_RECT.width // 2, 370))  # Position near the top
         return victory_msg, rect
+
+    def make_stats_text(self, font, health, fight_time):
+        """Create the stats text showing remaining health and fight duration."""
+        stats_msg = f"Remaining Health: {health} | Time: {fight_time:.2f}s"
+        stats_surface = font.render(stats_msg, True, pg.Color("white"))
+        rect = stats_surface.get_rect(center=(prepare.SCREEN_RECT.width // 2, 280))  # Positioned above Victory text
+        return stats_surface, rect
 
     def make_options(self, font, options, spacer):
         """Create the menu options and position them in the center of the screen."""
@@ -45,6 +60,21 @@ class Victory(state_machine._State):
     def startup(self, now, persistent):
         self.persist = persistent
         self.start_time = now
+
+        # Retrieve health and fight_time from persistent state
+        health = self.persist.get("health", 3)  # Default to 3 if not provided
+        fight_time = self.persist.get("fight_time", 0.00)  # Default to 3.00 if not provided
+        self.stats_text = self.make_stats_text(SMALLER_FONT, health, fight_time)
+
+        self.selected_enemy = self.persist.get(
+            "selected_enemy", {"name": "Default", "health": 10, "warning_duration": 1500}
+        )
+
+        # Start background music
+        if not self.music_playing:
+            pg.mixer.music.load(self.music_file)
+            pg.mixer.music.play(0)  # Loop indefinitely
+            self.music_playing = True
 
     def cleanup(self):
         """Reset State.done to False."""
@@ -64,6 +94,8 @@ class Victory(state_machine._State):
         # Draw the "Victory" text
         surface.blit(*self.victory_text)
 
+        surface.blit(*self.stats_text)
+
         # Draw the menu options
         for i, (msg, rect) in enumerate(self.options):
             if i == self.index:
@@ -81,6 +113,7 @@ class Victory(state_machine._State):
                 elif action == "move_up":
                     self.index = (self.index - 1) % len(OPTIONS)
                 elif action == "punch_left" or action == "punch_right":
+                    pg.mixer.music.stop()
                     self.handle_selection()
 
     def handle_selection(self):
@@ -89,7 +122,11 @@ class Victory(state_machine._State):
         if selected_option == "CONTINUE":
             self.next = "GAME"  # Continue the game (or go to the next level)
         elif selected_option == "REPLAY":
-            self.next = "GAME"  # Replay the game (restart the current level)
+            self.next = "GAME"
+            self.done = True
+            # Ensure the selected enemy is carried over to the next game session
+            self.persist["selected_enemy"] = self.selected_enemy
+            return self.persist
         elif selected_option == "MAIN MENU":
             self.next = "LOADING"
             self.persist["next_state"] = "SELECT"  # Go back to the main menu after loading

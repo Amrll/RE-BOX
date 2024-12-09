@@ -18,7 +18,7 @@ cap = cv2.VideoCapture(0)
 hands_area = [[], []]
 
 # Cooldown tracking
-cooldown_time = 1.0  # Cooldown duration in seconds
+cooldown_time = 0 # Cooldown duration in seconds
 last_punch_time = {"left": 0, "right": 0}
 
 previous_column = {"Left": "middle", "Right": "middle"}
@@ -125,6 +125,7 @@ def start_hand_detection():
 
 def get_detected_gesture():
     global current_gesture
+    print(current_gesture)
     with gesture_lock:
         return current_gesture
 

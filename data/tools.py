@@ -37,12 +37,13 @@ class Control:
 
     def event_loop(self):
         """Process all events and pass them down to the state_machine."""
-        for event in pg.event.get():
+        events = pg.event.get()
+        for event in events:
             if event.type == pg.QUIT:
                 self.done = True
             elif event.type == pg.KEYDOWN:
                 self.keys = pg.key.get_pressed()
-                self.control_manager.handle_key_event(event)  # Handle key events through ControlManager
+                self.control_manager.handle_key_event(event)
                 self.toggle_show_fps(event.key)
             elif event.type == pg.KEYUP:
                 self.keys = pg.key.get_pressed()

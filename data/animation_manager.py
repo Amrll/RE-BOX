@@ -1,5 +1,9 @@
-import pygame as pg
+"""
+This file handles the animations of the character and the enemies,
+in an inefficient way ofc but it works so yhea
+"""
 
+import pygame as pg
 
 class AnimationManager:
     def __init__(self):
@@ -19,23 +23,29 @@ class AnimationManager:
         heart_frames = [pg.image.load(f"assets/graphics/misc/heart/heart_frame_{i}.png") for i in range(6)]
         self.add_animation("Heart", heart_frames, frame_duration=100)
 
+        """Background Animation"""
+        crowd_frames = [pg.image.load(f"assets/graphics/misc/crowd_{i}.png") for i in range(2)]
+        self.add_animation("crowd", crowd_frames, frame_duration=400)
+
         """ENEMIES ANIMATIONS"""
 
         # EMOJI ANIMATION
-        emoji_idle = [pg.image.load(f"assets/graphics/enemies/emoji/idle_{i}.jpg") for i in range(2)]
+        emoji_idle = [pg.image.load(f"assets/graphics/enemies/emoji/idle_{i}.png") for i in range(2)]
         self.add_animation("emoji_idle", emoji_idle, frame_duration=1000)
 
-        emoji_attack = [pg.image.load(f"assets/graphics/enemies/emoji/idle_{i}.jpg") for i in range(1)]
-        self.add_animation("emoji_attack", emoji_attack, frame_duration=1000)
+        # emoji_attack = [pg.image.load(f"assets/graphics/enemies/emoji/idle_{i}.png") for i in range(1)]
+        # self.add_animation("emoji_attack", emoji_attack, frame_duration=1000)
 
-        emoji_hurt = [pg.image.load(f"assets/graphics/enemies/emoji/hurt_{i}.jpg") for i in range(2)]
+        emoji_hurt = [pg.image.load(f"assets/graphics/enemies/emoji/hurt_{i}.png") for i in range(1)]
         self.add_animation("emoji_hurt", emoji_hurt, frame_duration=1000)
 
-        emoji_block = [pg.image.load(f"assets/graphics/enemies/emoji/block_{i}.jpg") for i in range(3)]
+        emoji_block = [pg.image.load(f"assets/graphics/enemies/emoji/block_{i}.png") for i in range(3)]
         self.add_animation("emoji_block", emoji_block, frame_duration=1000)
 
-        emoji_warning = [pg.image.load(f"assets/graphics/enemies/emoji/warning_{i}.jpg") for i in range(1)]
-        self.add_animation("emoji_warning", emoji_warning, frame_duration=1000)
+        # emoji_warning = [pg.image.load(f"assets/graphics/enemies/emoji/warning_{i}.jpg") for i in range(1)]
+        # self.add_animation("emoji_warning", emoji_warning, frame_duration=1000)
+
+
 
 
 

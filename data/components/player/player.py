@@ -33,7 +33,6 @@ class Player(pg.sprite.Sprite):
 
         self.player_positions = [500, 830, 1160]  # X-coordinates for left, middle, and right
         self.player_pos = 1
-        self.last_move_time = 0
         self.surface = surface
 
         self.is_attacking = False

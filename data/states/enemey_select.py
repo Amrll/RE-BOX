@@ -1,11 +1,24 @@
+import os
+import threading
+import time
+
 import pygame as pg
-from .. import state_machine, prepare
+from .. import state_machine, prepare, hand_detection
 from ..components.enemy.enemy import Enemy
 
 
 class EnemySelect(state_machine._State):
     def __init__(self):
         super(EnemySelect, self).__init__()
+        self.last_gesture_time = None
+        self.current_gesture = None
+        self.gesture_lock = threading.Lock()
+        self.detecting = True
+        self.gesture_debounce_time = .5
+        self.detection_thread = threading.Thread(target=self.run_hand_detection, daemon=True)
+        self.detection_thread.start()
+
+
         self.enemies = [
             {"name": "emoji", "health": 5, "warning_duration": 1000, "image": prepare.GFX["enemies"]["emoji"]["portrait"]},
             {"name": "speedy", "health": 7, "warning_duration": 1000, "image": prepare.GFX["backgrounds"]["ring1"]},
@@ -16,6 +29,10 @@ class EnemySelect(state_machine._State):
         self.font = pg.font.Font(None, 36)
         self.grid_cell_size = 80
         self.grid_cols = 5
+        self.reset_game_state()
+
+        self.music_playing = False
+        self.music_file = prepare.MUSIC["select_enemy"]
 
 
     def render_current_enemy(self, surface):
@@ -101,6 +118,29 @@ class EnemySelect(state_machine._State):
                     rect = pg.Rect(x, y, self.grid_cell_size - 10, self.grid_cell_size - 10)
                     pg.draw.rect(surface, color, rect)
 
+    def run_hand_detection(self):
+        while self.detecting:
+            detected_gesture = hand_detection.get_detected_gesture()
+
+            # Only update current_gesture if enough time has passed since the last update
+            if detected_gesture:
+                current_time = time.time()
+                if self.last_gesture_time is None or current_time - self.last_gesture_time >= self.gesture_debounce_time:
+                    with self.gesture_lock:
+                        self.current_gesture = detected_gesture
+                        self.last_gesture_time = current_time
+
+                        if detected_gesture == "move_right":
+                            self.selected_index = (self.selected_index + 1) % len(self.enemies)
+                        elif detected_gesture == "move_left":
+                            self.selected_index = (self.selected_index - 1) % len(self.enemies)
+                        elif detected_gesture in ("punch_left", "punch_right"):
+                            pg.mixer.music.stop()
+                            self.persist["music_playing"] = False
+                            self.detecting = False
+                            self.next = "GAME"
+                            self.done = True
+
     def handle_input(self, keys):
         """Handle keyboard input for enemy selection."""
         if keys[pg.K_UP]:
@@ -112,8 +152,28 @@ class EnemySelect(state_machine._State):
         elif keys[pg.K_RIGHT]:
             self.selected_index = (self.selected_index + 1) % len(self.enemies)
         elif keys[pg.K_RETURN]:
+            pg.mixer.music.stop()
+            self.persist["music_playing"] = False
             self.next = "GAME"
             self.done = True
+
+    def startup(self, now, persistent):
+        """Called when transitioning to this state."""
+        self.persist = persistent
+        self.reset_game_state()
+
+        # Start background music
+        if not self.music_playing:
+            pg.mixer.music.load(self.music_file)
+            pg.mixer.music.play(-1)  # Loop indefinitely
+            self.music_playing = True
+
+    def reset_game_state(self):
+        """Reset game state variables when restarting."""
+        self.selected_index = 0
+        self.done = False
+        if "selected_enemy" in self.persist:
+            del self.persist["selected_enemy"]
 
     def update(self, keys, now):
         """Update enemy selection logic."""

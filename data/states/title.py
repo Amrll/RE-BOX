@@ -43,12 +43,21 @@ class Title(state_machine._State):
         self.anykey_delay = 800  # 2-second delay for AnyKey and TradeMark
         self.delay_timer = None  # Timer for delaying AnyKey and TradeMark appearance
 
+        self.music_playing = False
+        self.music_file = prepare.MUSIC["mainmenu"]
+
     def startup(self, now, persistant):
         self.persist = persistant
         self.start_time = now
         self.scrolling = False
         self.delay_timer = tools.Timer(self.anykey_delay, False)  # Delay timer starts later
         self.elements = self.make_elements()
+
+        # Start background music
+        if not self.music_playing:
+            pg.mixer.music.load(self.music_file)
+            pg.mixer.music.play(-1)  # Loop indefinitely
+            self.music_playing = True
 
     def make_elements(self):
         group = pg.sprite.LayeredUpdates()
@@ -112,6 +121,7 @@ class Title(state_machine._State):
                         self.last_gesture_time = current_time
 
                         if detected_gesture in ("punch_left", "punch_right"):
+                            self.detecting = False
                             self.done = True
                             self.next = "SELECT"
 
@@ -120,7 +130,8 @@ class Title(state_machine._State):
             if event.key == DEFAULT_CONTROLS["punch_left"] or event.key == DEFAULT_CONTROLS["punch_right"]:
                 self.done = True
                 self.next = "SELECT"
-
+                self.persist["music_playing"] = True
+                return self.persist
 
     def draw(self, surface, interpolate):
         surface.blit(self.ground, (0, 0))
@@ -168,7 +179,6 @@ class TitleImage(tools._BaseSprite):
             self.rect.centery = prepare.SCREEN_RECT.centery  # Snap to center when done
 
 
-
 class AnyKey(pg.sprite.Sprite):
     def __init__(self, *groups):
         super().__init__(*groups)
@@ -190,8 +200,6 @@ class AnyKey(pg.sprite.Sprite):
         self.image = self.raw_image if self.blink else self.null_image
 
 
-
-
 class TradeMark(pg.sprite.Sprite):
     def __init__(self, *groups):
         pg.sprite.Sprite.__init__(self, *groups)
@@ -203,9 +211,5 @@ class TradeMark(pg.sprite.Sprite):
 
 
 def render_font(font, size, msg, color=(255, 255, 255)):
-    """
-    Takes the name of a loaded font, the size, and the color and returns
-    a rendered surface of the msg given.
-    """
     selected_font = pg.font.Font(prepare.FONTS[font], size)
     return selected_font.render(msg, 1, color)

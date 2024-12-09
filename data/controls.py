@@ -1,6 +1,9 @@
-import pygame as pg
+"""
+for if the player wants to use their keyboard instead
+"""
 
-from data import hand_detection
+
+import pygame as pg
 
 DEFAULT_CONTROLS = {
     'move_left': pg.K_a,

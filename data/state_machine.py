@@ -47,7 +47,6 @@ class StateMachine(object):
 
         previous, self.state_name = self.state_name, self.state.next
         persist = self.state.cleanup()
-        print(f"Persist data before state transition: {persist}")
         self.state = self.state_dict[self.state_name]
         self.state.persist = persist if persist else {}
 

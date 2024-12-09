@@ -19,15 +19,24 @@ class Game(state_machine._State):
         self.hud = None
         self.next = None
         self.done = False
+        self.ring = None
+        self.light = None
 
         self.player = Player(prepare.SCREEN)
 
-        self.countdown = Countdown(duration=4000)  # Initialize Countdown
+        self.countdown = Countdown(duration=3000)  # Initialize Countdown
 
         # Variables for blinking effect
         self.warning_visible = True
         self.warning_blink_timer = 0  # Timer for blinking
         self.warning_blink_interval = 200
+
+
+        self.start_time = 0
+
+        self.music_playing = False
+        self.music_file = prepare.MUSIC["fighting"]
+        self.countdown_file = prepare.MUSIC["countdown"]
 
     def reset_game_state(self):
         """Reset game state variables when restarting."""
@@ -41,8 +50,11 @@ class Game(state_machine._State):
         self.persist = persistent
         self.start_time = now
         self.reset_game_state()
+        self.start_time = now
         self.setup_arena()
         self.setup_hud()
+        self.setup_ring()
+        self.setup_light()
 
         selected_enemy = self.persist.get("selected_enemy", {"name": "Default", "health": 10, "warning_duration": 1500})
 
@@ -52,11 +64,18 @@ class Game(state_machine._State):
         self.enemy.health = selected_enemy["health"]
         self.enemy.warning_duration = selected_enemy["warning_duration"]
 
-
     def setup_arena(self):
         """Set up the background arena."""
         background_image = prepare.GFX["misc"]["bg_ring"]
         self.ground = pg.transform.scale(background_image, prepare.SCREEN_RECT.size)
+
+    def setup_ring(self):
+        ring = prepare.GFX["backgrounds"]["ring1"]
+        self.ring = pg.transform.scale(ring, prepare.SCREEN_RECT.size)
+
+    def setup_light(self):
+        light = prepare.GFX["misc"]["light"]
+        self.light = pg.transform.scale(light, prepare.SCREEN_RECT.size)
 
     def setup_hud(self):
         """Initialize the HUD for displaying health bars and info."""
@@ -66,8 +85,19 @@ class Game(state_machine._State):
         """Update game state including player and enemy logic."""
         if self.countdown.active:
             self.countdown.update()  # Update the countdown
+            if not self.music_playing:
+                pg.mixer.music.load(self.countdown_file)
+                pg.mixer.music.play(0)
+                self.music_playing = True
         else:
             # Update player and enemy only after countdown is over
+
+            if self.music_playing:
+                pg.mixer.music.stop()  # Stop the countdown music
+                pg.mixer.music.load(self.music_file)
+                pg.mixer.music.play(-1)  # Start the fighting music in a loop
+                self.music_playing = False
+
             self.player.update(now, keys, self.enemy)
 
             # Pass the player's current position to the enemy
@@ -93,6 +123,10 @@ class Game(state_machine._State):
     def draw(self, surface, interpolate):
         """Render the game visuals."""
         surface.blit(self.ground, (0, 0))  # Draw the background
+
+        self.animation_manager.play_animation("crowd", surface, (-200, -80))
+        surface.blit(self.ring, (0, 0))
+        surface.blit(self.light, (0, 0))
 
         self.player.draw(surface)  # draw the player
 
@@ -141,10 +175,22 @@ class Game(state_machine._State):
 
     def game_over(self):
         """Handle game over state."""
+        pg.mixer.music.stop()
         self.next = "GAME_OVER"
         self.done = True
 
     def victory(self):
+        pg.mixer.music.stop()
         """Handle victory state."""
+        persistent = {
+            "health": self.player.health,  # Current health at the time of victory
+            "fight_time": (pg.time.get_ticks() - self.start_time) / 1000.0,  # Convert time to seconds
+            "selected_enemy": {
+                "name": self.enemy.enemy_name,
+                "health": self.enemy.initial_health,
+                "warning_duration": self.enemy.warning_duration,
+            },  # Persist selected enemy data
+        }
+        self.persist = persistent
         self.next = "VICTORY"
         self.done = True

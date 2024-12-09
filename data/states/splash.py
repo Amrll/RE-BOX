@@ -67,8 +67,7 @@ class Splash(state_machine._State):
 
             if elapsed_time > self.load_duration:
                 self.done = True
-                self.detecting = False  # Stop the thread
-                self.detection_thread.join()
+                self.detecting = False
 
         # Update the player's idle animation
         self.player.update(now, keys, None)
