@@ -12,7 +12,7 @@ from ..controls import ControlManager
 FONT = pg.font.Font(prepare.FONTS["Fixedsys500c"], 60)
 SMALLER_FONT = pg.font.Font(prepare.FONTS["Fixedsys500c"], 30)
 VICTORY_FONT = pg.font.Font(prepare.FONTS["Fixedsys500c"], 100)
-OPTIONS = ["CONTINUE", "REPLAY", "MAIN MENU"]
+OPTIONS = ["REPLAY", "MAIN MENU"]
 HIGHLIGHT_COLOR = (108, 148, 136)
 BACKGROUND_COLOR = (0, 0, 0)
 OPTION_SPACER = 80
@@ -114,14 +114,13 @@ class Victory(state_machine._State):
                     self.index = (self.index - 1) % len(OPTIONS)
                 elif action == "punch_left" or action == "punch_right":
                     pg.mixer.music.stop()
+                    self.music_playing = False
                     self.handle_selection()
 
     def handle_selection(self):
         """Handle the selected option."""
         selected_option = OPTIONS[self.index]
-        if selected_option == "CONTINUE":
-            self.next = "GAME"  # Continue the game (or go to the next level)
-        elif selected_option == "REPLAY":
+        if selected_option == "REPLAY":
             self.next = "GAME"
             self.done = True
             # Ensure the selected enemy is carried over to the next game session

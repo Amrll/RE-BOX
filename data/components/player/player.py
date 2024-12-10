@@ -18,14 +18,12 @@ class Player(pg.sprite.Sprite):
     def __init__(self, surface, *groups):
         super().__init__(*groups)
 
-
         self.current_gesture = None
         self.gesture_lock = threading.Lock()
         self.hand_detected = False  # Store detection result
         self.detecting = True  # Control detection thread
         self.detection_thread = threading.Thread(target=self.run_hand_detection, daemon=True)
         self.detection_thread.start()
-
 
         self.state_machine = PlayerStateMachine(self)
         self.initial_health = 3  # Set the initial health value
@@ -44,7 +42,8 @@ class Player(pg.sprite.Sprite):
 
     def update(self, now, keys, enemy):
         """Update player logic."""
-        self.process_current_gesture()
+        with self.gesture_lock:
+            self.process_current_gesture()
         self.state_machine.update(self)
 
     def reset(self):
@@ -86,13 +85,9 @@ class Player(pg.sprite.Sprite):
 
     def handle_attack(self, gesture):
         if gesture == "punch_left":
-            self.state_machine.change_state(AttackLeft())
+            self.is_attacking = True
         elif gesture == "punch_right":
-            self.state_machine.change_state(AttackRight())
-
-    def attack(self):
-        """Handle player attack logic."""
-        self.is_attacking = True
+            self.is_attacking = True
 
     def reset_attack(self):
         """Reset the player's attack flag after attack is processed."""

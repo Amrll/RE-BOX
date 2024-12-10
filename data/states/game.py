@@ -81,6 +81,13 @@ class Game(state_machine._State):
         """Initialize the HUD for displaying health bars and info."""
         self.hud = pg.font.Font(None, 36)
 
+    def setup_music(self):
+        if self.music_playing:
+            pg.mixer.music.stop()  # Stop the countdown music
+            pg.mixer.music.load(self.music_file)
+            pg.mixer.music.play(-1)  # Start the fighting music in a loop
+            self.music_playing = False
+
     def update(self, keys, now):
         """Update game state including player and enemy logic."""
         if self.countdown.active:
@@ -91,12 +98,7 @@ class Game(state_machine._State):
                 self.music_playing = True
         else:
             # Update player and enemy only after countdown is over
-
-            if self.music_playing:
-                pg.mixer.music.stop()  # Stop the countdown music
-                pg.mixer.music.load(self.music_file)
-                pg.mixer.music.play(-1)  # Start the fighting music in a loop
-                self.music_playing = False
+            self.setup_music()
 
             self.player.update(now, keys, self.enemy)
 
@@ -173,15 +175,8 @@ class Game(state_machine._State):
                 overlay.fill((255, 165, 0))  # Orange color for the warning
                 surface.blit(overlay, warning_rect.topleft)
 
-    def game_over(self):
-        """Handle game over state."""
-        pg.mixer.music.stop()
-        self.next = "GAME_OVER"
-        self.done = True
-
-    def victory(self):
-        pg.mixer.music.stop()
-        """Handle victory state."""
+    def cleanup(self):
+        self.music_playing = False
         persistent = {
             "health": self.player.health,  # Current health at the time of victory
             "fight_time": (pg.time.get_ticks() - self.start_time) / 1000.0,  # Convert time to seconds
@@ -192,5 +187,17 @@ class Game(state_machine._State):
             },  # Persist selected enemy data
         }
         self.persist = persistent
+        return self.persist
+
+    def game_over(self):
+        """Handle game over state."""
+        pg.mixer.music.stop()
+        self.next = "GAME_OVER"
+        self.done = True
+
+    def victory(self):
+        pg.mixer.music.stop()
+        """Handle victory state."""
         self.next = "VICTORY"
         self.done = True
+

@@ -86,12 +86,11 @@ class Enemy(pg.sprite.Sprite):
         self.state_machine.change_state(TakeDamage(damage))
 
     def draw(self, surface):
-        pass
         x_offset = -120
         y_offset = -150
 
         animation_position = (self.rect.x + x_offset, self.rect.y + y_offset)
-        if isinstance(self.state_machine.state, TakeDamage):
+        if self.is_taking_damage:
             self.set_animation(f"{self.enemy_name}_hurt")
         elif isinstance(self.state_machine.state, Block):
             self.set_animation(f"{self.enemy_name}_block")

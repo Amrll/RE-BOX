@@ -20,7 +20,7 @@ class EnemySelect(state_machine._State):
 
 
         self.enemies = [
-            {"name": "emoji", "health": 5, "warning_duration": 1000, "image": prepare.GFX["enemies"]["emoji"]["portrait"]},
+            {"name": "emoji", "health": 1, "warning_duration": 1000, "image": prepare.GFX["enemies"]["emoji"]["portrait"]},
             {"name": "speedy", "health": 7, "warning_duration": 1000, "image": prepare.GFX["backgrounds"]["ring1"]},
             {"name": "tank", "health": 15, "warning_duration": 2000, "image": prepare.GFX["backgrounds"]["ring1"]},
             {"name": "balanced", "health": 10, "warning_duration": 1500, "image": prepare.GFX["backgrounds"]["ring1"]},
@@ -153,7 +153,6 @@ class EnemySelect(state_machine._State):
             self.selected_index = (self.selected_index + 1) % len(self.enemies)
         elif keys[pg.K_RETURN]:
             pg.mixer.music.stop()
-            self.persist["music_playing"] = False
             self.next = "GAME"
             self.done = True
 

@@ -90,12 +90,14 @@ class GameOver(state_machine._State):
                     self.index = (self.index - 1) % len(OPTIONS)
                 elif action == "punch_left" or action == "punch_right":
                     pg.mixer.music.stop()
+                    self.music_playing = False
                     self.handle_selection()
 
     def handle_selection(self):
         """Handle the selected option."""
         selected_option = OPTIONS[self.index]
         if selected_option == "RETRY":
+            self.done = True
             self.next = "GAME"  # Restart the game
         elif selected_option == "MAIN MENU":
             self.next = "LOADING"

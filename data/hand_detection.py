@@ -18,7 +18,7 @@ cap = cv2.VideoCapture(0)
 hands_area = [[], []]
 
 # Cooldown tracking
-cooldown_time = 0 # Cooldown duration in seconds
+cooldown_time = 1 # Cooldown duration in seconds
 last_punch_time = {"left": 0, "right": 0}
 
 previous_column = {"Left": "middle", "Right": "middle"}
@@ -37,8 +37,12 @@ def detect_punch():
     if not success:
         return None
 
+    target_width = 640  # Adjust target width
+    target_height = 480  # Adjust target height
+    frame_resized = cv2.resize(frame, (target_width, target_height))
+
     # Convert frame to RGB
-    img_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+    img_rgb = cv2.cvtColor(frame_resized, cv2.COLOR_BGR2RGB)
     results = hands.process(img_rgb)
 
     h, w, _ = frame.shape
@@ -48,7 +52,6 @@ def detect_punch():
         for hand_id, hand_landmarks in enumerate(results.multi_hand_landmarks):
             x_list, y_list = [], []
             for lm in hand_landmarks.landmark:
-                h, w, _ = frame.shape
                 cx, cy = int(lm.x * w), int(lm.y * h)
                 x_list.append(cx)
                 y_list.append(cy)
@@ -125,7 +128,7 @@ def start_hand_detection():
 
 def get_detected_gesture():
     global current_gesture
-    print(current_gesture)
+    time.sleep(0.01)
     with gesture_lock:
         return current_gesture
 
