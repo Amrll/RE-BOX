@@ -5,6 +5,7 @@ import time
 import pygame as pg
 from .. import state_machine, prepare, hand_detection
 from ..components.enemy.enemy import Enemy
+from ..controls import DEFAULT_CONTROLS
 
 
 class EnemySelect(state_machine._State):
@@ -20,8 +21,8 @@ class EnemySelect(state_machine._State):
 
 
         self.enemies = [
-            {"name": "emoji", "health": 1, "warning_duration": 1000, "image": prepare.GFX["enemies"]["emoji"]["portrait"]},
-            {"name": "speedy", "health": 7, "warning_duration": 1000, "image": prepare.GFX["backgrounds"]["ring1"]},
+            {"name": "emoji", "health": 5, "warning_duration": 1000, "image": prepare.GFX["enemies"]["emoji"]["portrait"]},
+            {"name": "skully", "health": 10, "warning_duration": 800, "image": prepare.GFX["enemies"]["skull"]["portrait"]},
             {"name": "tank", "health": 15, "warning_duration": 2000, "image": prepare.GFX["backgrounds"]["ring1"]},
             {"name": "balanced", "health": 10, "warning_duration": 1500, "image": prepare.GFX["backgrounds"]["ring1"]},
         ]
@@ -33,6 +34,10 @@ class EnemySelect(state_machine._State):
 
         self.music_playing = False
         self.music_file = prepare.MUSIC["select_enemy"]
+
+        self.choose_sound = pg.mixer.Sound(prepare.SFX["choosing"])
+        self.punch_sound = pg.mixer.Sound(prepare.SFX["hit"])
+        self.play_sound = False
 
 
     def render_current_enemy(self, surface):
@@ -131,30 +136,47 @@ class EnemySelect(state_machine._State):
                         self.last_gesture_time = current_time
 
                         if detected_gesture == "move_right":
+                            if self.play_sound:
+                                self.choose_sound.play()
                             self.selected_index = (self.selected_index + 1) % len(self.enemies)
                         elif detected_gesture == "move_left":
+                            if self.play_sound:
+                                self.choose_sound.play()
                             self.selected_index = (self.selected_index - 1) % len(self.enemies)
                         elif detected_gesture in ("punch_left", "punch_right"):
+                            if self.play_sound:
+                                self.punch_sound.play()
                             pg.mixer.music.stop()
-                            self.persist["music_playing"] = False
-                            self.detecting = False
                             self.next = "GAME"
                             self.done = True
 
-    def handle_input(self, keys):
+    def get_event(self, event):
         """Handle keyboard input for enemy selection."""
-        if keys[pg.K_UP]:
-            self.selected_index = max(0, self.selected_index - self.grid_cols)
-        elif keys[pg.K_DOWN]:
-            self.selected_index = min(len(self.enemies) - 1, self.selected_index + self.grid_cols)
-        elif keys[pg.K_LEFT]:
-            self.selected_index = (self.selected_index - 1) % len(self.enemies)
-        elif keys[pg.K_RIGHT]:
-            self.selected_index = (self.selected_index + 1) % len(self.enemies)
-        elif keys[pg.K_RETURN]:
-            pg.mixer.music.stop()
-            self.next = "GAME"
-            self.done = True
+        if event.type == pg.KEYDOWN:
+            if event.key == DEFAULT_CONTROLS["move_left"]:
+                if self.play_sound:
+                    self.choose_sound.play()
+                self.selected_index = (self.selected_index - 1) % len(self.enemies)
+            elif event.key == DEFAULT_CONTROLS["move_right"]:
+                if self.play_sound:
+                    self.choose_sound.play()
+                self.selected_index = (self.selected_index + 1) % len(self.enemies)
+            elif event.key == DEFAULT_CONTROLS["move_up"]:
+                if self.play_sound:
+                    self.choose_sound.play()
+                self.selected_index = max(0, self.selected_index - self.grid_cols)
+            elif event.key == DEFAULT_CONTROLS["move_down"]:
+                if self.play_sound:
+                    self.choose_sound.play()
+                self.selected_index = min(len(self.enemies) - 1, self.selected_index + self.grid_cols)
+            elif event.key == DEFAULT_CONTROLS["punch_left"] or event.key == DEFAULT_CONTROLS["punch_right"]:
+                if self.play_sound:
+                    self.punch_sound.play()
+                pg.mixer.music.stop()
+                self.next = "GAME"
+                self.done = True
+
+
 
     def startup(self, now, persistent):
         """Called when transitioning to this state."""
@@ -167,6 +189,8 @@ class EnemySelect(state_machine._State):
             pg.mixer.music.play(-1)  # Loop indefinitely
             self.music_playing = True
 
+        self.play_sound = True
+
     def reset_game_state(self):
         """Reset game state variables when restarting."""
         self.selected_index = 0
@@ -175,8 +199,7 @@ class EnemySelect(state_machine._State):
             del self.persist["selected_enemy"]
 
     def update(self, keys, now):
-        """Update enemy selection logic."""
-        self.handle_input(keys)
+        pass
 
     def draw(self, surface, interpolate):
         """Render the enemy selection screen."""
@@ -186,6 +209,8 @@ class EnemySelect(state_machine._State):
 
     def cleanup(self):
         """Store selected enemy data in the persistent dictionary."""
+        self.detecting = False
+        self.play_sound = False
         self.persist["selected_enemy"] = self.enemies[self.selected_index]
         return self.persist
 

@@ -37,8 +37,8 @@ def detect_punch():
     if not success:
         return None
 
-    target_width = 640  # Adjust target width
-    target_height = 480  # Adjust target height
+    target_width = 640
+    target_height = 480
     frame_resized = cv2.resize(frame, (target_width, target_height))
 
     # Convert frame to RGB

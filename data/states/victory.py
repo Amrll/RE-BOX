@@ -32,6 +32,10 @@ class Victory(state_machine._State):
         self.music_playing = False
         self.music_file = prepare.MUSIC["victory"]
 
+        self.choose_sound = pg.mixer.Sound(prepare.SFX["choosing"])
+        self.punch_sound = pg.mixer.Sound(prepare.SFX["hit"])
+        self.play_sound = False
+
     def make_victory_text(self, font):
         """Create the 'Victory' text and center it at the top of the screen."""
         victory_msg = font.render("VICTORY", True, pg.Color("green"))
@@ -61,6 +65,8 @@ class Victory(state_machine._State):
         self.persist = persistent
         self.start_time = now
 
+        self.play_sound = True
+
         # Retrieve health and fight_time from persistent state
         health = self.persist.get("health", 3)  # Default to 3 if not provided
         fight_time = self.persist.get("fight_time", 0.00)  # Default to 3.00 if not provided
@@ -78,6 +84,7 @@ class Victory(state_machine._State):
 
     def cleanup(self):
         """Reset State.done to False."""
+        self.play_sound = False
         self.done = False
         return self.persist
 
@@ -109,10 +116,16 @@ class Victory(state_machine._State):
 
             if event.type == pg.KEYDOWN:
                 if action == "move_down":
+                    if self.play_sound:
+                        self.choose_sound.play()
                     self.index = (self.index + 1) % len(OPTIONS)
                 elif action == "move_up":
+                    if self.play_sound:
+                        self.choose_sound.play()
                     self.index = (self.index - 1) % len(OPTIONS)
                 elif action == "punch_left" or action == "punch_right":
+                    if self.play_sound:
+                        self.punch_sound.play()
                     pg.mixer.music.stop()
                     self.music_playing = False
                     self.handle_selection()

@@ -36,6 +36,7 @@ class MainMenu(state_machine._State):
     def __init__(self):
         super().__init__()
 
+        self.is_focused = True
         self.last_gesture_time = None
         self.current_gesture = None
         self.gesture_lock = threading.Lock()
@@ -54,6 +55,9 @@ class MainMenu(state_machine._State):
         self.control_manager = ControlManager()
 
         self.music_file = prepare.MUSIC["mainmenu"]
+        self.choose_sound = pg.mixer.Sound(prepare.SFX["choosing"])
+        self.punch_sound = pg.mixer.Sound(prepare.SFX["hit"])
+        self.play_sound = False
 
     def make_options(self, font, options, spacer):
         rendered = []
@@ -87,8 +91,11 @@ class MainMenu(state_machine._State):
             pg.mixer.music.play(-1)  # Loop indefinitely
             self.persist["music_playing"] = True
 
+        self.play_sound = True
+
     def cleanup(self):
         """Reset State.done to False."""
+        self.play_sound = False
         self.next = None
         self.done = False
         return self.persist
@@ -127,28 +134,35 @@ class MainMenu(state_machine._State):
             surface.blit(msg, rect)
             
     def run_hand_detection(self):
-        while self.detecting:
-            detected_gesture = hand_detection.get_detected_gesture()
+        if self.is_focused:
+            while self.detecting:
+                detected_gesture = hand_detection.get_detected_gesture()
 
-            # Only update current_gesture if enough time has passed since the last update
-            if detected_gesture:
-                current_time = time.time()
-                if self.last_gesture_time is None or current_time - self.last_gesture_time >= self.gesture_debounce_time:
-                    with self.gesture_lock:
-                        self.current_gesture = detected_gesture
-                        self.last_gesture_time = current_time
 
-                        if detected_gesture == "move_right":
-                            self.index = (self.index + 1) % len(OPTIONS)
-                            if self.index == 0:
+                # Only update current_gesture if enough time has passed since the last update
+                if detected_gesture:
+                    current_time = time.time()
+                    if self.last_gesture_time is None or current_time - self.last_gesture_time >= self.gesture_debounce_time:
+                        with self.gesture_lock:
+                            self.current_gesture = detected_gesture
+                            self.last_gesture_time = current_time
+
+                            if detected_gesture == "move_right":
                                 self.index = (self.index + 1) % len(OPTIONS)
-                        elif detected_gesture == "move_left":
-                            self.index = (self.index - 1) % len(OPTIONS)
-                            # Skip "STORY MODE" (index 0) when navigating
-                            if self.index == 0:
+                                if self.play_sound:
+                                    self.choose_sound.play()
+                                if self.index == 0:
+                                    self.index = (self.index + 1) % len(OPTIONS)
+                            elif detected_gesture == "move_left":
+                                if self.play_sound:
+                                    self.choose_sound.play()
                                 self.index = (self.index - 1) % len(OPTIONS)
-                        elif detected_gesture in ("punch_left", "punch_right"):
-                            self.pressed_enter()
+                                if self.index == 0:
+                                    self.index = (self.index - 1) % len(OPTIONS)
+                            elif detected_gesture in ("punch_left", "punch_right"):
+                                if self.play_sound:
+                                    self.punch_sound.play()
+                                self.pressed_enter()
 
     def get_event(self, event):
         """Handle key events using ControlManager."""
@@ -158,15 +172,34 @@ class MainMenu(state_machine._State):
             if event.type == pg.KEYDOWN:
                 if action == "move_right":
                     self.index = (self.index + 1) % len(OPTIONS)
+                    if self.play_sound:
+                        self.choose_sound.play()
                     if self.index == 0:
                         self.index = (self.index + 1) % len(OPTIONS)
                 elif action == "move_left":
                     self.index = (self.index - 1) % len(OPTIONS)
-                    # Skip "STORY MODE" (index 0) when navigating
+                    if self.play_sound:
+                        self.choose_sound.play()
                     if self.index == 0:
                         self.index = (self.index - 1) % len(OPTIONS)
                 elif action == "punch_left" or action == "punch_right":
+                    if self.play_sound:
+                        self.punch_sound.play()
                     self.pressed_enter()
+                elif action == "restart_game":
+                    pg.mixer.music.stop()
+                    self.persist["music_playing"] = False
+                    self.next = "SPLASH"
+                    self.done = True
+        elif event.type == pg.WINDOWFOCUSLOST:
+            pg.mixer.music.pause()
+            self.play_sound = False
+            self.is_focused = False
+        elif event.type == pg.WINDOWFOCUSGAINED:
+            pg.mixer.music.unpause()
+            self.is_focused = True
+            self.play_sound = True
+
 
     def pressed_enter(self):
         """Set the next state based on the selected option."""

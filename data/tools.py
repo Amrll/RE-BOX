@@ -171,7 +171,7 @@ def load_all_gfx(directory, colorkey=(255, 0, 255), accept=(".png", ".jpg", ".bm
     return graphics
 
 
-def load_all_music(directory, accept=(".wav", ".mp3", ".ogg", ".mdi")):
+def load_all_music(directory, accept=(".wav", ".mp3", ".ogg", ".mdi", ".mov")):
     """
     Create a dictionary of paths to music files in given directory
     if their extensions are in accept.

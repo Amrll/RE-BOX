@@ -12,7 +12,8 @@ DEFAULT_CONTROLS = {
     'move_down': pg.K_s,
     'punch_left': pg.K_j,
     'punch_right': pg.K_k,
-    'select': pg.K_RETURN 
+    'select': pg.K_RETURN,
+    'restart_game': pg.K_1
 }
 
 

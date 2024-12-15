@@ -46,6 +46,8 @@ class Title(state_machine._State):
         self.music_playing = False
         self.music_file = prepare.MUSIC["mainmenu"]
 
+        self.punch_sound = pg.mixer.Sound(prepare.SFX["hit"])
+
     def startup(self, now, persistant):
         self.persist = persistant
         self.start_time = now
@@ -58,6 +60,30 @@ class Title(state_machine._State):
             pg.mixer.music.load(self.music_file)
             pg.mixer.music.play(-1)  # Loop indefinitely
             self.music_playing = True
+
+    def cleanup(self):
+        """Reset all state variables and animations for re-entry."""
+        self.done = False
+        # Reset state variables
+        self.arena_settled = False
+        self.title_settled = False
+        self.anykey_visible = False
+        self.trademark_visible = False
+
+        # Reset delay timer
+        self.delay_timer = tools.Timer(self.anykey_delay, False)
+
+        # Reinitialize elements to their original state
+        self.elements = self.make_elements()
+
+        # Reset arena and title positions
+        self.arena.rect.midtop = (prepare.SCREEN_RECT.centerx, prepare.SCREEN_RECT.height)
+        self.title_image.rect.midbottom = (prepare.SCREEN_RECT.centerx, 0)
+
+        # Reset music playing state
+        self.music_playing = False
+        pg.mixer.music.stop()
+
 
     def make_elements(self):
         group = pg.sprite.LayeredUpdates()
@@ -121,6 +147,8 @@ class Title(state_machine._State):
                         self.last_gesture_time = current_time
 
                         if detected_gesture in ("punch_left", "punch_right"):
+                            self.punch_sound.play()
+
                             self.detecting = False
                             self.done = True
                             self.next = "SELECT"
@@ -128,6 +156,7 @@ class Title(state_machine._State):
     def get_event(self, event):
         if event.type == pg.KEYDOWN:
             if event.key == DEFAULT_CONTROLS["punch_left"] or event.key == DEFAULT_CONTROLS["punch_right"]:
+                self.punch_sound.play()
                 self.done = True
                 self.next = "SELECT"
                 self.persist["music_playing"] = True

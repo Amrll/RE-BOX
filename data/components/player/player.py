@@ -2,7 +2,7 @@ import queue
 
 import pygame as pg
 
-from data import hand_detection
+from data import hand_detection, prepare
 from data.animation_manager import AnimationManager
 from data.components.player.player_state_machine import PlayerStateMachine
 from data.components.player.states.attack_left import AttackLeft
@@ -40,6 +40,11 @@ class Player(pg.sprite.Sprite):
 
         self.animation_manager = AnimationManager()
 
+        self.left_punch = pg.mixer.Sound(prepare.SFX["left_punch"])
+        self.right_punch = pg.mixer.Sound(prepare.SFX["right_punch"])
+        self.hurt = pg.mixer.Sound(prepare.SFX["hurt"])
+        self.play_sound = False
+
     def update(self, now, keys, enemy):
         """Update player logic."""
         with self.gesture_lock:
@@ -48,6 +53,7 @@ class Player(pg.sprite.Sprite):
 
     def reset(self):
         """Reset the player to its initial state, including health."""
+        self.play_sound = True
         self.health = self.initial_health
         self.is_hurt = False
         self.is_attacking = False
@@ -55,6 +61,8 @@ class Player(pg.sprite.Sprite):
 
     def take_damage(self, damage):
         """Handle player taking damage."""
+        if self.play_sound:
+            self.hurt.play()
         self.state_machine.change_state(TakeDamage(damage))
 
     def process_current_gesture(self):
@@ -85,8 +93,12 @@ class Player(pg.sprite.Sprite):
 
     def handle_attack(self, gesture):
         if gesture == "punch_left":
+            if self.play_sound:
+                self.left_punch.play()
             self.is_attacking = True
         elif gesture == "punch_right":
+            if self.play_sound:
+                self.left_punch.play()
             self.is_attacking = True
 
     def reset_attack(self):

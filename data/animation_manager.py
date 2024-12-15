@@ -45,7 +45,16 @@ class AnimationManager:
         # emoji_warning = [pg.image.load(f"assets/graphics/enemies/emoji/warning_{i}.jpg") for i in range(1)]
         # self.add_animation("emoji_warning", emoji_warning, frame_duration=1000)
 
+        # Skull
 
+        skull_idle = [pg.image.load(f"assets/graphics/enemies/skull/idle_{i}.png") for i in range(2)]
+        self.add_animation("skully_idle", skull_idle, frame_duration=1000)
+
+        skull_hurt = [pg.image.load(f"assets/graphics/enemies/skull/hurt_{i}.png") for i in range(1)]
+        self.add_animation("skully_hurt", skull_hurt, frame_duration=1000)
+
+        skull_block = [pg.image.load(f"assets/graphics/enemies/skull/block_{i}.png") for i in range(3)]
+        self.add_animation("skully_block", skull_block, frame_duration=1000)
 
 
 

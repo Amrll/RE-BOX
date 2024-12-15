@@ -21,19 +21,23 @@ class Game(state_machine._State):
         self.done = False
         self.ring = None
         self.light = None
+        self.warning_overlay = self.create_warning_overlay()
+
+        self.enemy_update_interval = 5
+        self.frame_count = 0
 
         self.player = Player(prepare.SCREEN)
-
         self.countdown = Countdown(duration=3000)  # Initialize Countdown
+
+        self.dirty_rects = []
 
         # Variables for blinking effect
         self.warning_visible = True
         self.warning_blink_timer = 0  # Timer for blinking
         self.warning_blink_interval = 200
 
-
         self.start_time = 0
-
+        self.countdown_active = True
         self.music_playing = False
         self.music_file = prepare.MUSIC["fighting"]
         self.countdown_file = prepare.MUSIC["countdown"]
@@ -55,6 +59,7 @@ class Game(state_machine._State):
         self.setup_hud()
         self.setup_ring()
         self.setup_light()
+        self.countdown_active = True
 
         selected_enemy = self.persist.get("selected_enemy", {"name": "Default", "health": 10, "warning_duration": 1500})
 
@@ -90,16 +95,17 @@ class Game(state_machine._State):
 
     def update(self, keys, now):
         """Update game state including player and enemy logic."""
-        if self.countdown.active:
-            self.countdown.update()  # Update the countdown
+        if self.countdown_active:
+            self.countdown.update()
             if not self.music_playing:
                 pg.mixer.music.load(self.countdown_file)
                 pg.mixer.music.play(0)
                 self.music_playing = True
+            if not self.countdown.active:
+                self.countdown_active = False
+                self.setup_music()
         else:
             # Update player and enemy only after countdown is over
-            self.setup_music()
-
             self.player.update(now, keys, self.enemy)
 
             # Pass the player's current position to the enemy
@@ -114,7 +120,12 @@ class Game(state_machine._State):
             self.enemy.check_player_attack(self.player)
 
             # Trigger enemy attack logic
-            self.enemy.update()
+            self.frame_count += 1
+            if not self.countdown_active:
+                self.player.update(now, keys, self.enemy)
+                if self.frame_count % self.enemy_update_interval == 0:
+                    self.enemy.update_player_position(self.player.player_pos)
+                    self.enemy.update()
 
             # Check if game is over
             if self.player.health <= 0:
@@ -124,8 +135,8 @@ class Game(state_machine._State):
 
     def draw(self, surface, interpolate):
         """Render the game visuals."""
-        surface.blit(self.ground, (0, 0))  # Draw the background
 
+        surface.blit(self.ground, (0, 0))
         self.animation_manager.play_animation("crowd", surface, (-200, -80))
         surface.blit(self.ring, (0, 0))
         surface.blit(self.light, (0, 0))
@@ -145,10 +156,20 @@ class Game(state_machine._State):
         if self.countdown.active:
             self.countdown.draw(surface)
 
+        self.dirty_rects = [surface.get_clip()]
+
+    def create_warning_overlay(self):
+        """Create a reusable translucent orange overlay."""
+        screen_width, screen_height = prepare.SCREEN_RECT.size
+        column_width = screen_width // 3
+        overlay = pg.Surface((column_width, screen_height))
+        overlay.set_alpha(128)  # Transparency level
+        overlay.fill((255, 165, 0))  # Orange color
+        return overlay
+
     def draw_warning(self, surface):
-        """Draw the warning for the attack column with a blinking effect."""
+        """Draw the warning for the attack column using a reusable overlay."""
         if self.enemy.is_warning_active():
-            # Update blinking state
             current_time = pg.time.get_ticks()
             if current_time - self.warning_blink_timer >= self.warning_blink_interval:
                 self.warning_visible = not self.warning_visible
@@ -156,27 +177,14 @@ class Game(state_machine._State):
 
             if self.warning_visible:
                 attack_position = self.enemy.get_warning_position()
-
-                # Ensure valid attack_position
-                if attack_position not in (0, 1, 2):
-                    return  # Ignore invalid positions
-
-                # Define column dimensions
-                screen_width, screen_height = surface.get_size()
-                column_width = screen_width / 3  # Use floating-point division for precision
-
-                # Calculate the rectangle for the warning column
-                rect_x = round(attack_position * column_width)
-                warning_rect = pg.Rect(rect_x, 0, round(column_width), screen_height)
-
-                # Draw a translucent orange overlay
-                overlay = pg.Surface(warning_rect.size)
-                overlay.set_alpha(128)  # Transparency level
-                overlay.fill((255, 165, 0))  # Orange color for the warning
-                surface.blit(overlay, warning_rect.topleft)
+                if attack_position in (0, 1, 2):
+                    column_width = prepare.SCREEN_RECT.width // 3
+                    rect_x = attack_position * column_width
+                    surface.blit(self.warning_overlay, (rect_x, 0))
 
     def cleanup(self):
         self.music_playing = False
+        self.player.play_sound = False
         persistent = {
             "health": self.player.health,  # Current health at the time of victory
             "fight_time": (pg.time.get_ticks() - self.start_time) / 1000.0,  # Convert time to seconds
@@ -200,4 +208,3 @@ class Game(state_machine._State):
         """Handle victory state."""
         self.next = "VICTORY"
         self.done = True
-
